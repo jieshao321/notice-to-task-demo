@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>通知落地助手 · 任务卡</title>
+<style>
+  :root{
+    --paper:#F7F6F2;      /* 暖白纸感背景 */
+    --card:#FFFFFF;       /* 卡片纯白 */
+    --line:#E4E1D8;       /* 浅米灰分隔线 */
+    --line-strong:#D6D2C6;
+    --ink:#2A2A28;        /* 主文字，不用纯黑 */
+    --ink-2:#5C5C57;      /* 次要文字 */
+    --ink-3:#8A8A83;      /* 提示文字 */
+    --green:#2E6B5E;     /* 低饱和墨绿，替代霓虹青 */
+    --amber:#A4703C;      /* 待确认提示色 */
+
+    /* v2 新增：仅用于装饰，不影响上面任何一项的语义 */
+    --green-deep:#255a4f;
+    --green-soft:#EDF3F0;
+    --green-line:#CFE0D8;
+    --amber-soft:#FAF1E2;
+    --hover:#FBFAF5;
+    --shadow-s:0 1px 2px rgba(42,42,40,.04);
+    --shadow-m:0 1px 2px rgba(42,42,40,.05), 0 10px 26px -20px rgba(42,42,40,.45);
+    --shadow-l:-24px 0 64px -30px rgba(42,42,40,.38);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{font-size:16px}
+  body{
+    background:var(--paper); color:var(--ink); height:100vh; overflow:hidden;
+    background-image:
+      radial-gradient(1100px 520px at 10% -10%, #FFFDF8, rgba(255,253,248,0) 60%),
+      radial-gradient(820px 460px at 100% 0%, #F3F0E6, rgba(243,240,230,0) 58%);
+    font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",sans-serif;
+    padding:28px 40px 20px; display:flex; flex-direction:column;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- header ---------- */
+  header{display:flex;align-items:flex-start;justify-content:space-between;padding-bottom:16px}
+  .head-left{display:flex;align-items:flex-start;gap:13px}
+  .mark{
+    width:38px;height:38px;border-radius:9px;flex:none;margin-top:2px;
+    background:linear-gradient(160deg,rgba(53,120,102,.62),#2E6B5E);
+    background-color:var(--green);
+    display:grid;place-items:center;color:#fff;
+    box-shadow:0 6px 14px -8px rgba(46,107,94,.9), inset 0 1px 0 rgba(255,255,255,.22);
+  }
+  .mark svg{width:19px;height:19px;display:block}
+  .head-left h1{font-size:23px;font-weight:600;letter-spacing:.3px}
+  .head-left .sub{margin-top:7px;font-size:13px;color:var(--ink-3)}
+  .head-right{text-align:right;padding-top:2px}
+  .stat{font-size:15px;color:var(--ink-2);letter-spacing:.5px;font-variant-numeric:tabular-nums}
+  .stat b{font-size:26px;font-weight:600;color:var(--ink);margin-right:2px}
+  .stat b.hl{color:var(--green)}
+  .stat span{font-size:12px;color:var(--ink-3)}
+  .stat i{font-style:normal;color:var(--line-strong);margin:0 8px;font-size:16px}
+  .stat-note{margin-top:6px;font-size:11.5px;color:var(--ink-3);letter-spacing:.3px}
+
+  /* ---------- tagline ---------- */
+  .tagline{
+    display:flex;align-items:center;gap:14px;
+    padding:11px 0 13px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+    font-size:12.5px;color:var(--ink-2);letter-spacing:.4px;margin-bottom:20px;
+  }
+  .tagline em{font-style:normal;color:var(--line-strong)}
+  .tagline .spacer{flex:1}
+  /* v2 新增：如实标注演示性质，不在页脚才说 */
+  .demo-pill{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:11.5px;color:var(--amber);letter-spacing:.2px;
+    background:var(--amber-soft);border:1px solid #EBDCC2;border-radius:999px;
+    padding:3px 10px 3px 8px;white-space:nowrap;cursor:help;
+  }
+  .demo-pill .dot{width:5px;height:5px;border-radius:50%;background:var(--amber);flex:none}
+
+  /* ---------- main ---------- */
+  main{flex:1;display:grid;grid-template-columns:minmax(340px,0.9fr) minmax(500px,1.1fr);gap:34px;min-height:0}
+  .label{font-size:13px;color:var(--ink-2);margin-bottom:10px;letter-spacing:.5px}
+  .pane-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px}
+  .pane-head .label{margin-bottom:0}
+  .left{display:flex;flex-direction:column;min-height:0}
+  .right{display:flex;flex-direction:column;min-height:0}
+
+  /* 字数徽标 */
+  .counter{font-size:11.5px;color:var(--ink-3);letter-spacing:.2px;font-variant-numeric:tabular-nums}
+  .counter b{color:var(--ink-2);font-weight:600}
+
+  textarea{
+    flex:1;width:100%;min-height:0;resize:none;
+    background:var(--card);border:1px solid var(--line-strong);border-radius:4px;
+    color:var(--ink-2);padding:16px 18px;font-size:14px;line-height:1.95;
+    font-family:inherit;outline:none;box-shadow:var(--shadow-s);
+    transition:border-color .18s, box-shadow .18s;
+  }
+  textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft)}
+  .actions{display:flex;gap:10px;margin-top:14px;align-items:center}
+  .hint-key{margin-left:auto;font-size:11.5px;color:var(--ink-3);letter-spacing:.2px}
+  .hint-key kbd{
+    font-family:inherit;font-size:11px;color:var(--ink-2);
+    border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:3px;
+    padding:1px 5px;background:#fff;
+  }
+  button{
+    font-family:inherit;font-size:14px;padding:11px 20px;border-radius:4px;cursor:pointer;
+    border:1px solid var(--line-strong);background:var(--card);color:var(--ink-2);
+    transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  }
+  button:hover{border-color:var(--green);color:var(--green);background:#fff}
+  button:active{transform:translateY(1px)}
+  button.primary{
+    background:linear-gradient(180deg,#357866,#2E6B5E);color:#fff;border-color:var(--green);
+    font-weight:600;box-shadow:0 6px 16px -12px rgba(46,107,94,.9), inset 0 1px 0 rgba(255,255,255,.16);
+  }
+  button.primary:hover{background:linear-gradient(180deg,#2E6B5E,#255a4f);color:#fff;border-color:var(--green-deep)}
+  button.primary svg{width:15px;height:15px}
+  button:disabled{opacity:.55;cursor:not-allowed;transform:none}
+  button:focus-visible{outline:2px solid var(--green-line);outline-offset:2px}
+
+  /* ---------- 任务卡 ---------- */
+  .card-wrap{position:relative;flex:1;display:flex;min-height:0}
+  .card{
+    flex:1;background:var(--card);border:1px solid var(--line-strong);border-radius:4px;
+    padding:6px 0;overflow:auto;box-shadow:var(--shadow-m);position:relative;
+  }
+  .row{
+    display:grid;grid-template-columns:92px 1fr;gap:18px;align-items:start;
+    padding:13px 22px;border-bottom:1px solid var(--line);
+    opacity:0;transition:opacity .3s ease, background .18s;
+    position:relative;cursor:pointer;
+  }
+  .row:last-child{border-bottom:none}
+  .row.on{opacity:1}
+  .row::before{
+    content:"";position:absolute;left:0;top:9px;bottom:9px;width:2px;border-radius:2px;
+    background:var(--green);opacity:0;transition:opacity .18s;
+  }
+  .row:hover{background:var(--hover)}
+  .row:hover::before{opacity:.55}
+  .row:focus-visible{outline:2px solid var(--green-line);outline-offset:-2px}
+  .row .k{font-size:13.5px;font-weight:600;color:var(--green);padding-top:1px}
+  .row.wait .k{color:var(--amber)}
+  .row.wait::before{background:var(--amber)}
+  .row .v{font-size:14.5px;line-height:1.9;color:var(--ink);white-space:pre-wrap}
+  .row.wait .v{color:var(--ink-2)}
+  .row .v ul{list-style:none}
+  .row .v li{padding-left:0}
+  .row .v li + li{margin-top:5px}
+  .row.wait .v li + li{margin-top:3px}
+  .empty{padding:52px 22px;color:var(--ink-3);font-size:14px;text-align:center;line-height:1.9}
+  /* 空态时让提示垂直居中；浏览器不支持 :has 时退化为原上留白，不影响布局 */
+  .card:has(.empty){display:flex;align-items:center;justify-content:center}
+  .empty{padding:24px 22px}
+
+  /* 顶部处理进度线（v2 新增，独立于卡片内容） */
+  .progress{
+    position:absolute;left:-1px;right:-1px;top:-1px;height:2px;border-radius:2px 2px 0 0;
+    overflow:hidden;opacity:0;pointer-events:none;z-index:3;
+  }
+  .progress .bar{
+    height:100%;width:0%;border-radius:2px;
+    background:linear-gradient(90deg,rgba(46,107,94,0),var(--green) 35%,#4E9483);
+  }
+  .progress.on{opacity:1}
+  .progress.on .bar{animation:fill .64s cubic-bezier(.32,.72,.3,1) forwards}
+  @keyframes fill{from{width:0%}to{width:100%}}
+
+  /* ---------- 要素刻度（v2 新增） ---------- */
+  .meter{display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none;border:0;background:none;padding:2px 0}
+  .meter .segs{display:flex;gap:3px}
+  .meter .segs span{width:13px;height:4px;border-radius:2px;background:var(--line);transition:.25s}
+  .meter .segs span.ok{background:var(--green)}
+  .meter .segs span.todo{background:var(--amber);opacity:.55}
+  .meter .mt{font-size:11.5px;color:var(--ink-3);letter-spacing:.2px;font-variant-numeric:tabular-nums}
+  .meter:hover .mt{color:var(--ink-2)}
+
+  /* ---------- 工件条（v2 新增的 5 件工件入口） ---------- */
+  .artifacts{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .art-label{font-size:11.5px;color:var(--ink-3);letter-spacing:.6px;margin-right:2px}
+  .chip{
+    font-size:12.5px;padding:6px 12px;border-radius:999px;border:1px solid var(--line-strong);
+    background:var(--card);color:var(--ink-2);box-shadow:var(--shadow-s);
+  }
+  .chip:hover{border-color:var(--green);color:var(--green);background:#fff}
+  .chip[aria-current="true"]{
+    background:var(--green-soft);border-color:var(--green-line);color:var(--green);font-weight:600;
+    box-shadow:none;cursor:default;
+  }
+  .chip[aria-current="true"]:hover{color:var(--green);background:var(--green-soft)}
+
+  /* ---------- footer ---------- */
+  footer{margin-top:14px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--ink-3);gap:16px}
+  .status{color:var(--green);font-variant-numeric:tabular-nums}
+  .foot-note{font-size:11.5px;color:var(--ink-3);letter-spacing:.2px}
+
+  /* ---------- 抽屉（v2 新增） ---------- */
+  .scrim{
+    position:fixed;inset:0;background:rgba(42,42,40,.26);backdrop-filter:blur(2px);
+    opacity:0;pointer-events:none;transition:opacity .26s;z-index:40;
+  }
+  .scrim.on{opacity:1;pointer-events:auto}
+  .drawer{
+    position:fixed;top:0;right:0;bottom:0;width:min(580px,94vw);z-index:50;
+    background:var(--card);border-left:1px solid var(--line-strong);
+    box-shadow:var(--shadow-l);display:flex;flex-direction:column;
+    transform:translateX(102%);transition:transform .3s cubic-bezier(.22,.68,.24,1);
+  }
+  .drawer.on{transform:translateX(0)}
+  .dr-head{
+    padding:22px 26px 16px;border-bottom:1px solid var(--line);
+    display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex:none;
+  }
+  .dr-head h2{font-size:17px;font-weight:600;letter-spacing:.3px}
+  .dr-head p{margin-top:7px;font-size:12.5px;color:var(--ink-3);line-height:1.7}
+  .icon-btn{
+    width:30px;height:30px;padding:0;border-radius:8px;flex:none;
+    color:var(--ink-3);border-color:transparent;background:transparent;font-size:15px;
+  }
+  .icon-btn:hover{background:var(--paper);color:var(--ink);border-color:transparent}
+  .dr-body{flex:1;overflow:auto;padding:20px 26px 26px}
+
+  /* 原文对照 */
+  .doc{font-size:14px;line-height:2.05;color:var(--ink-2);letter-spacing:.1px}
+  .doc p{margin-bottom:10px}
+  .doc p:last-child{margin-bottom:0}
+  .doc .blank{height:6px}
+  mark.q{
+    background:#E9F1EC;color:var(--ink);border-radius:2px;
+    padding:.5px 1px;box-shadow:inset 0 -1px 0 #B9D2C6;transition:.25s;
+  }
+  mark.q.active{
+    background:#CFE4D9;box-shadow:inset 0 -2px 0 var(--green);
+  }
+  .doc-tip{
+    margin-top:18px;padding-top:14px;border-top:1px dashed var(--line);
+    font-size:11.5px;color:var(--ink-3);line-height:1.85;
+  }
+
+  /* 发班文案 */
+  .seg{display:inline-flex;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:2px;margin-bottom:14px}
+  .seg-btn{
+    border:0;background:transparent;font-size:12.5px;color:var(--ink-3);
+    padding:6px 14px;border-radius:6px;box-shadow:none;
+  }
+  .seg-btn:hover{background:transparent;color:var(--ink-2);border:0}
+  .seg-btn.on{background:#fff;color:var(--green);font-weight:600;box-shadow:var(--shadow-s)}
+  .msgbox{
+    font-family:inherit;font-size:13.5px;line-height:2;color:var(--ink);
+    background:var(--paper);border:1px solid var(--line);border-radius:8px;
+    padding:16px 18px;white-space:pre-wrap;word-break:break-word;
+  }
+  .msg-meta{margin-top:10px;font-size:11.5px;color:var(--ink-3);display:flex;justify-content:space-between;gap:12px}
+  .btn-row{display:flex;gap:9px;margin-top:16px}
+  .btn-sm{font-size:13px;padding:9px 16px}
+  .btn-sm svg{width:14px;height:14px}
+
+  /* 追问清单 */
+  .ask-list{list-style:none;counter-reset:q}
+  .ask-list li{
+    counter-increment:q;position:relative;padding:13px 0 13px 38px;
+    border-bottom:1px solid var(--line);font-size:14px;line-height:1.85;color:var(--ink);
+  }
+  .ask-list li:last-child{border-bottom:none}
+  .ask-list li::before{
+    content:counter(q);position:absolute;left:0;top:16px;
+    width:22px;height:22px;border-radius:50%;background:var(--amber-soft);color:var(--amber);
+    font-size:11.5px;font-weight:600;display:grid;place-items:center;
+  }
+  .ask-from{display:block;margin-top:5px;font-size:11.5px;color:var(--ink-3)}
+
+  /* 留痕 */
+  .timeline{list-style:none;position:relative;padding-left:20px}
+  .timeline::before{content:"";position:absolute;left:3px;top:8px;bottom:8px;width:1px;background:var(--line)}
+  .timeline li{position:relative;padding:0 0 18px 2px}
+  .timeline li:last-child{padding-bottom:0}
+  .timeline li::before{
+    content:"";position:absolute;left:-20px;top:7px;width:7px;height:7px;border-radius:50%;
+    background:#fff;border:1.5px solid var(--line-strong);
+  }
+  .timeline li:first-child::before{border-color:var(--green);background:var(--green)}
+  .tl-t{font-size:11.5px;color:var(--ink-3);font-variant-numeric:tabular-nums;letter-spacing:.3px}
+  .tl-a{font-size:13.5px;color:var(--ink);margin-top:3px;line-height:1.7}
+  .tl-d{font-size:11.5px;color:var(--ink-3);margin-top:2px;line-height:1.7}
+  .empty-note{font-size:13px;color:var(--ink-3);line-height:1.9}
+
+  /* toast */
+  .toast{
+    position:absolute;left:50%;bottom:18px;transform:translate(-50%,14px);
+    background:rgba(42,42,40,.92);color:#fff;font-size:12.5px;letter-spacing:.2px;
+    padding:9px 16px;border-radius:999px;opacity:0;pointer-events:none;
+    transition:.24s;z-index:6;white-space:nowrap;box-shadow:0 10px 24px -14px rgba(0,0,0,.6);
+  }
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:#D6D2C6;border-radius:5px}
+  ::-webkit-scrollbar-thumb:hover{background:#C4BFB1}
+  ::-webkit-scrollbar-track{background:transparent}
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.001ms !important;transition-duration:.001ms !important}
+  }
+  @media (max-width:1120px),(max-height:660px){
+    body{height:auto;min-height:100vh;overflow:auto;padding:22px 22px 18px}
+    main{grid-template-columns:1fr;gap:22px}
+    textarea{min-height:220px}
+    .card-wrap{min-height:320px}
+    .hint-key{display:none}
+  }
+/* ===================== v3 新增：追问应答闭环 ===================== */
+.ans-row{display:flex;gap:8px;margin-top:9px}
+.ans-row input{
+  flex:1;min-width:0;height:34px;border:1px solid var(--line-strong);border-radius:8px;
+  padding:0 11px;font:inherit;font-size:13px;color:var(--ink);background:#fff;
+}
+.ans-row input::placeholder{color:var(--ink-3)}
+.ans-row input:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft)}
+.ans-go{
+  flex:0 0 auto;height:34px;border:1px solid var(--green);background:var(--green);color:#fff;
+  border-radius:8px;padding:0 14px;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap;
+}
+.ans-go:hover{background:var(--green-deep);border-color:var(--green-deep)}
+.ask-clear{
+  border:1px solid var(--green-line);background:var(--green-soft);border-radius:10px;
+  padding:14px 16px;font-size:13.5px;color:var(--green-deep);line-height:1.85;
+}
+.sec-t{margin:24px 0 8px;font-size:11.5px;letter-spacing:.6px;color:var(--ink-3)}
+.done-list{list-style:none}
+.done-list li{
+  display:flex;align-items:center;gap:10px;padding:11px 0;
+  border-bottom:1px solid var(--line);font-size:13px;line-height:1.6;
+}
+.done-list li:last-child{border-bottom:none}
+.dk{color:var(--ink-3);flex:0 0 auto}
+.dv{color:var(--green-deep);font-weight:600;flex:1;min-width:0;word-break:break-word}
+.undo{
+  flex:0 0 auto;border:1px solid var(--line-strong);background:#fff;border-radius:7px;
+  height:26px;padding:0 10px;font:inherit;font-size:11.5px;color:var(--ink-3);cursor:pointer;
+}
+.undo:hover{border-color:var(--amber);color:var(--amber)}
+.who{margin-top:7px;font-size:11.5px;color:var(--ink-3);line-height:1.7}
+.allclear{color:var(--green);font-size:13.5px;font-weight:600}
+.row .v li.conf{color:var(--green-deep);margin-top:8px;padding-top:7px;border-top:1px dashed var(--green-line)}
+.ask-list li[data-n]::before{content:attr(data-n);font-size:12.5px}
+.row.closed .k{color:var(--green)}
+.row.closed::before{background:var(--green)}</style>
+</head>
+<body>
+<header>
+  <div class="head-left">
+    <div class="mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 4h11l3 3v13H5z"/><path d="M8 9h8M8 13h8M8 17h5"/>
+      </svg>
+    </div>
+    <div>
+      <h1>通知落地助手</h1>
+      <p class="sub">把一条通知，变成一份能直接发班的任务包</p>
+    </div>
+  </div>
+  <div class="head-right">
+    <div class="stat"><b>60</b><span>分钟</span><i>→</i><b class="hl">10</b><span>分钟</span></div>
+    <div class="stat-note">一条通知，从读完到发出去</div>
+  </div>
+</header>
+<div class="tagline">
+  <span>8 项要素自动填</span>
+  <em>·</em>
+  <span>5 件工件直接发</span>
+  <em>·</em>
+  <span>每条结论可回原文</span>
+  <span class="spacer"></span>
+  <span class="demo-pill" title="本页不做真实解析：点击「生成任务卡」返回的是预置抽取结果，仅用于界面演示与录屏。">
+    <span class="dot"></span>演示模式 · 预置结果
+  </span>
+</div>
+
+<main>
+  <section class="left">
+    <div class="pane-head">
+      <div class="label">通知原文</div>
+      <div class="counter" id="counter">— 字</div>
+    </div>
+    <textarea id="src" spellcheck="false"></textarea>
+    <div class="actions">
+      <button class="primary" id="gen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12z"/></svg>
+        生成任务卡
+      </button>
+      <button id="load">载入示例通知</button>
+      <button id="clear">清空</button>
+      <span class="hint-key"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> 生成</span>
+    </div>
+  </section>
+
+  <section class="right">
+    <div class="pane-head">
+      <div class="label">任务卡</div>
+      <button class="meter" id="meter" title="点击查看 5 项待确认内容">
+        <span class="segs" id="segs"></span>
+        <span class="mt" id="meterTxt">未生成</span>
+      </button>
+    </div>
+    <div class="card-wrap">
+      <div class="progress" id="progress"><div class="bar"></div></div>
+      <div class="card" id="card">
+        <div class="empty">左侧贴入通知，点「生成任务卡」<br>八项要素会自动填好，没写的会标成「待确认」</div>
+      </div>
+      <div class="toast" id="toast"></div>
+    </div>
+    <div class="artifacts">
+      <span class="art-label">工件</span>
+      <button class="chip" data-art="card" aria-current="true">任务卡</button>
+      <button class="chip" data-art="compare">原文对照</button>
+      <button class="chip" data-art="msg">发班文案</button>
+      <button class="chip" data-art="ask">追问清单</button>
+      <button class="chip" data-art="log">留痕记录</button>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span>绵阳城市学院 · 落地有声队</span>
+  <span class="foot-note">非实时解析：结果为预置数据，仅用于界面演示</span>
+  <span class="status" id="status">就绪</span>
+</footer>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true" aria-label="工件面板">
+  <div class="dr-head">
+    <div>
+      <h2 id="drTitle">原文对照</h2>
+      <p id="drSub"></p>
+    </div>
+    <button class="icon-btn" id="drClose" aria-label="关闭面板">✕</button>
+  </div>
+  <div class="dr-body" id="drBody"></div>
+</aside>
+
+<script>
+const NOTICE = `绵阳城市学院关于做好2026年春季学期国家助学金补评工作的通知
+
+各分院：
+
+我校2026年春季学期共有29人因休学等原因按规定将停发国家助学金，根据《绵阳城市学院关于开展2026年春季学期国家助学金受助学生调整工作的通知》（绵城资字〔2026〕2号）等文件精神，现就做好2026年春季学期国家助学金补评工作通知如下：
+
+一、补评对象
+2026年春季学期新增被认定为家庭经济困难的学生。
+
+二、申请流程
+1.学生在3月23日前提交《本专科生国家助学金申请表》（附件）至辅导员处。
+2.辅导员组织班级评议小组在3月23日前完成资格审查后上报至分院。
+3.各分院在3月25日前完成评审，公示无异议后将名单上报至学生资助管理中心。
+
+三、名额分配
+各分院根据本分院停发的助学金名额及等级进行补评。
+
+四、注意事项
+1.国家助学金春季学期补评对象以秋季学期评定结束后家庭遭遇重大变故导致家庭经济特别困难的学生为主，由分院统一组织评选。补评的助学金等级不得高于家庭经济困难等级。
+2.本次补评的国家助学金名额为本学期因休学等原因停发国家助学金产生的名额，上学期应发助学金已发放给原学生，本学期获评学生只能领取本学期的国家助学金，即对应国家助学金等级的一半。
+
+附件：本专科生国家助学金申请表
+
+绵阳城市学院学生资助管理中心
+2026年3月20日`;
+
+const RESULT = {
+  "事项": "2026 年春季学期国家助学金补评",
+  "对象": "2026 年春季学期新增被认定为家庭经济困难的学生",
+  "条件": [
+    "① 以秋季学期评定结束后家庭遭遇重大变故、导致家庭经济特别困难的学生为主，由分院统一组织评选",
+    "② 补评的助学金等级不得高于家庭经济困难等级",
+    "③ 名额为本学期因休学等原因停发国家助学金产生的名额",
+    "④ 本学期获评学生只能领取本学期的国家助学金（即对应等级的一半）"
+  ],
+  "截止": [
+    "学生提交申请表 · 原文「3 月 23 日前」→ 2026-03-23",
+    "辅导员资格审查上报 · 原文「3 月 23 日前」→ 2026-03-23",
+    "分院评审并公示上报 · 原文「3 月 25 日前」→ 2026-03-25"
+  ],
+  "材料": ["《本专科生国家助学金申请表》1 项（见附件）；份数、是否盖章 → 待确认"],
+  "交到哪": ["学生 → 辅导员处　|　辅导员 → 分院　|　分院 → 学生资助管理中心"],
+  "找谁": ["辅导员（原文未写明联系人姓名与电话）"],
+  "待确认": [
+    "① 申请表份数　② 是否需盖章　③ 各分院补评名额及等级",
+    "④ 是否需家庭重大变故证明材料　⑤ 公示时长及方式"
+  ]
+};
+
+const ORDER = ["事项","对象","条件","截止","材料","交到哪","找谁","待确认"];
+
+/* ---- v3 状态层：必须早于任何 buildMeter() 调用，故声明在 ORDER 之后 ---- */
+const ALL_PENDING = RESULT["待确认"].join("　")
+  .split(/[①②③④⑤⑥⑦⑧⑨⑩]/).map(s => s.trim()).filter(Boolean);
+const CIRC = "①②③④⑤⑥⑦⑧⑨⑩";
+/* 每项该问谁、回写落到哪一行；hint 只是输入框占位，不是预置答案 */
+const ASK_META = [
+  { who: "学生资助管理中心（起草单位）", hint: "如：1 份" },
+  { who: "学生资助管理中心（起草单位）", hint: "如：需盖章" },
+  { who: "各分院教务办",                 hint: "如：每院 2 个名额" },
+  { who: "学生资助管理中心（起草单位）", hint: "如：需附变故证明" },
+  { who: "学生资助管理中心（起草单位）", hint: "如：公示 5 个工作日" }
+];
+const CONF = {};        /* 索引 -> 老师确认后的值 */
+const CONF_ORDER = [];  /* 确认顺序 */
+const card = document.getElementById('card');
+const statusEl = document.getElementById('status');
+const src = document.getElementById('src');
+const gen = document.getElementById('gen');
+
+src.value = NOTICE;
+
+function render(data){
+  card.innerHTML = '';
+  ORDER.forEach((k, i) => {
+    const row = document.createElement('div');
+    row.className = 'row' + (k === '待确认' ? ' wait' : '');
+    const v = data[k];
+    const val = Array.isArray(v)
+      ? '<ul>' + v.map(x => '<li>' + x + '</li>').join('') + '</ul>'
+      : String(v);
+    row.innerHTML = '<div class="k">' + k + '</div><div class="v">' + val + '</div>';
+    card.appendChild(row);
+    setTimeout(() => row.classList.add('on'), 90 + i * 100);
+  });
+  setTimeout(() => { statusEl.textContent = '完成 · 8 项'; }, 90 + ORDER.length * 100);
+}
+
+function run(){
+  gen.disabled = true;
+  statusEl.textContent = '解析中…';
+  if (typeof updateCounter === 'function') updateCounter();
+  card.innerHTML = '<div class="empty">正在读取通知…</div>';
+  setTimeout(() => { render(RESULT); gen.disabled = false; }, 700);
+}
+
+gen.onclick = run;
+document.getElementById('load').onclick = () => { src.value = NOTICE; run(); };
+document.getElementById('clear').onclick = () => {
+  card.innerHTML = '<div class="empty">左侧贴入通知，点「生成任务卡」<br>八项要素会自动填好，没写的会标成「待确认」</div>';
+  statusEl.textContent = '就绪';
+};
+
+/* =====================================================================
+   以下为 v2 新增能力。
+   约束：不修改 RESULT 的任何一个字；不修改 render() / run() 的函数体；
+        不改变 setTimeout(700) 的模拟处理时长。
+        新增逻辑全部通过事件监听、只读派生与独立 DOM 完成，
+        因此任务卡的数值与顺序始终由 RESULT 决定，不存在第二份数据。
+   ===================================================================== */
+
+/* ---------- 1. 原文引用映射：仅存放“真实存在于 NOTICE 中的字符串” ---------- */
+const SRC_QUOTES = {
+  "事项": ["现就做好2026年春季学期国家助学金补评工作通知如下"],
+  "对象": ["2026年春季学期新增被认定为家庭经济困难的学生"],
+  "条件": [
+    "补评对象以秋季学期评定结束后家庭遭遇重大变故导致家庭经济特别困难的学生为主，由分院统一组织评选",
+    "补评的助学金等级不得高于家庭经济困难等级",
+    "本次补评的国家助学金名额为本学期因休学等原因停发国家助学金产生的名额",
+    "本学期获评学生只能领取本学期的国家助学金，即对应国家助学金等级的一半"
+  ],
+  "截止": ["3月23日前", "3月25日前"],
+  "材料": ["《本专科生国家助学金申请表》", "附件：本专科生国家助学金申请表"],
+  "交到哪": ["至辅导员处", "上报至分院", "上报至学生资助管理中心"],
+  "找谁": ["至辅导员处"]
+};
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/* ---------- 2. 留痕记录：只记本页真实发生的操作，不预置任何假事件 ---------- */
+const LOG = [];
+function nowStr(){
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, '0');
+  return p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+}
+function logEvent(action, detail){
+  LOG.unshift({ t: nowStr(), action, detail: detail || '' });
+  if (LOG.length > 12) LOG.pop();
+  if (current === 'log') paintLog();
+}
+
+/* ---------- 3. toast ---------- */
+let toastTimer = null;
+function toast(msg){
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('on'), 1700);
+}
+
+/* ---------- 4. 要素刻度：直接由 RESULT 计算，不另设数据 ---------- */
+/* done=false 时只画空刻度并显示“未生成”，避免任务卡还没出来就先报 7/8 */
+function buildMeter(done){
+  const segs = $('segs');
+  segs.innerHTML = '';
+  ORDER.forEach((k) => {
+    const s = document.createElement('span');
+    if (done) s.className = (k !== '待确认') ? 'ok' : 'todo';
+    segs.appendChild(s);
+  });
+  if (!done){ $('meterTxt').textContent = '未生成'; return; }
+  const filledN = ORDER.filter(k => k !== '待确认').length;
+  $('meterTxt').textContent = filledN + '/' + ORDER.length + ' 行已明确 · ' + countPending() + ' 项待确认';
+}
+
+/* ---------- 5. 原文对照 ---------- */
+function buildDocHtml(activeKey){
+  // 收集所有引用区间（按行处理，跨行引用本数据中不存在）
+  const lines = NOTICE.split('\n');
+  const out = [];
+  lines.forEach((line) => {
+    if (!line.trim()){ out.push('<p class="blank"></p>'); return; }
+    const ranges = [];
+    Object.keys(SRC_QUOTES).forEach((k) => {
+      SRC_QUOTES[k].forEach((q) => {
+        let from = 0, idx;
+        while ((idx = line.indexOf(q, from)) !== -1){
+          ranges.push({ s: idx, e: idx + q.length, k });
+          from = idx + q.length;
+        }
+      });
+    });
+    if (!ranges.length){ out.push('<p>' + esc(line) + '</p>'); return; }
+    // 合并重叠区间，保留全部归属字段
+    ranges.sort((a, b) => a.s - b.s || b.e - a.e);
+    const merged = [];
+    ranges.forEach((r) => {
+      const last = merged[merged.length - 1];
+      if (last && r.s < last.e){
+        last.e = Math.max(last.e, r.e);
+        if (!last.ks.includes(r.k)) last.ks.push(r.k);
+      } else merged.push({ s: r.s, e: r.e, ks: [r.k] });
+    });
+    let html = '', cur = 0;
+    merged.forEach((m) => {
+      html += esc(line.slice(cur, m.s));
+      const active = activeKey && m.ks.includes(activeKey) ? ' active' : '';
+      html += '<mark class="q' + active + '" data-k="' + esc(m.ks.join('、')) + '" title="对应字段：' + esc(m.ks.join('、')) + '">'
+            + esc(line.slice(m.s, m.e)) + '</mark>';
+      cur = m.e;
+    });
+    html += esc(line.slice(cur));
+    out.push('<p>' + html + '</p>');
+  });
+  return out.join('');
+}
+
+function paintCompare(activeKey){
+  $('drBody').innerHTML =
+    '<div class="doc" id="docBox">' + buildDocHtml(activeKey) + '</div>' +
+    '<div class="doc-tip">高亮处为任务卡字段在原文中的出处，鼠标悬停可见对应字段名。' +
+    '「待确认」的 5 项在原文中<b>没有任何对应表述</b>，因此不标高亮——这正是它们被列为待确认的原因。</div>';
+  if (activeKey){
+    const first = $('docBox').querySelector('mark.q.active');
+    if (first){
+      const body = $('drBody');
+      // 直接给 scrollTop：任何环境都必定生效，避免平滑滚动失效导致“点了没反应”
+      const delta = first.getBoundingClientRect().top - body.getBoundingClientRect().top;
+      body.scrollTop = Math.max(0, body.scrollTop + delta - 90);
+    }
+  }
+}
+
+/* ---------- 6. 发班文案：全部由 RESULT 派生，两个版本都不新增事实 ---------- */
+function deadlineItems(){
+  return RESULT["截止"].map((s) => {
+    const m = s.match(/(\d{4}-\d{2}-\d{2})/);
+    const name = s.split('·')[0].trim();
+    return { name, date: m ? m[1] : '' };
+  });
+}
+function buildMsg(mode){
+  const obj = RESULT["对象"];
+  const mat = materialText().split('；')[0].trim();   /* v3: 跟任务卡同一份口径 */
+  const where = String(RESULT["交到哪"][0]).split('|')[0].trim();
+  const who = String(RESULT["找谁"][0]).split('（')[0].trim();
+  const dl = deadlineItems();
+
+  if (mode === 'brief'){
+    const first = dl[0], last = dl[dl.length - 1];
+    const dest = where.split('→').pop().trim();   // 取路径终点，如「辅导员处」
+    const extra = dest.indexOf(who) === -1 ? '（' + who + '）' : '';  // 不重复罗列同一个人
+    return '【' + RESULT["事项"] + '】\n'
+      + '面向：' + obj + '。\n'
+      + '时间：' + first.name + ' ' + first.date + '；' + last.name + ' ' + last.date + '。\n'
+      + '材料：' + mat + '。\n'
+      + '交给：' + dest + extra + '。\n'
+      + (countPending()
+        ? ('份数、是否盖章等 ' + countPending() + ' 项原文未写，确认后我再补一条。')
+        : '原文没写的事项已全部确认，可直接发。');
+  }
+  return '【' + RESULT["事项"] + '】\n'
+    + '一、面向对象：' + obj + '。\n'
+    + '二、时间节点：' + dl.map(d => d.name + '（' + d.date + '）').join('；') + '。\n'
+    + '三、需交材料：' + mat + '。\n'
+    + '四、提交路径：' + RESULT["交到哪"][0] + '。\n'
+    + '五、注意事项：\n'
+    + RESULT["条件"].map(c => '　' + c).join('\n') + '\n'
+    + (countPending()
+        ? ('六、暂未明确（共 ' + countPending() + ' 项，确认后我补发一条）：\n'
+           + pendingItems().map((p, i) => '　' + (i + 1) + ') ' + p).join('\n') + '\n')
+        : '六、暂未明确：无，原文未写的事项已全部确认。\n')
+    + '七、如有疑问：找' + who + '。';
+}
+
+/* 待确认 5 项：从 RESULT["待确认"] 按序号拆分为可逐条追问的清单 */
+function pendingItems(){
+  return RESULT["待确认"].join('　')
+    .split(/[①②③④⑤⑥⑦⑧⑨⑩]/)
+    .map(s => s.trim())
+    .filter(Boolean);
+}
+function countPending(){ return pendingItems().length; }
+
+let msgMode = 'formal';
+function paintMsg(){
+  const text = buildMsg(msgMode);
+  $('drBody').innerHTML =
+    '<div class="seg">'
+      + '<button class="seg-btn' + (msgMode === 'formal' ? ' on' : '') + '" data-mode="formal">正式版</button>'
+      + '<button class="seg-btn' + (msgMode === 'brief' ? ' on' : '') + '" data-mode="brief">简报版</button>'
+    + '</div>'
+    + '<div class="msgbox" id="msgBox">' + esc(text) + '</div>'
+    + '<div class="msg-meta"><span>共 ' + text.replace(/\s/g, '').length + ' 字</span>'
+      + '<span>全部内容取自任务卡，未添加任何原文之外的事实</span></div>'
+    + '<div class="btn-row">'
+      + '<button class="btn-sm" id="copyMsg">'
+        + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>'
+        + '复制文案</button>'
+    + '</div>';
+  $('drBody').querySelectorAll('.seg-btn').forEach((b) => {
+    b.onclick = () => { msgMode = b.dataset.mode; paintMsg(); };
+  });
+  $('copyMsg').onclick = () => copyText(text, '发班文案已复制（' + (msgMode === 'formal' ? '正式版' : '简报版') + '）');
+}
+
+/* ---------- 7. 追问清单 ---------- */
+function paintAsk(){
+  const items = pendingItems();
+  $('drBody').innerHTML =
+    '<ul class="ask-list">'
+      + items.map((t, i) => '<li>' + esc(t)
+          + '<span class="ask-from">来源：任务卡「待确认」第 ' + (i + 1) + ' 项 · 原文未写明</span></li>').join('')
+    + '</ul>'
+    + '<div class="msg-meta"><span>共 ' + items.length + ' 条</span>'
+      + '<span>发给起草人即可闭环，无需学生二次转述</span></div>'
+    + '<div class="btn-row">'
+      + '<button class="btn-sm" id="copyAsk">'
+        + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>'
+        + '复制追问清单</button>'
+    + '</div>';
+  $('copyAsk').onclick = () => {
+    const text = '您好，关于「' + RESULT["事项"] + '」，以下 ' + items.length + ' 项原文未写明，麻烦确认：\n'
+      + items.map((t, i) => (i + 1) + '. ' + t).join('\n');
+    copyText(text, '追问清单已复制（' + items.length + ' 条）');
+  };
+}
+
+/* ---------- 8. 留痕 ---------- */
+function paintLog(){
+  $('drBody').innerHTML = LOG.length
+    ? '<ul class="timeline">' + LOG.map(e =>
+        '<li><div class="tl-t">' + e.t + '</div><div class="tl-a">' + esc(e.action) + '</div>'
+        + (e.detail ? '<div class="tl-d">' + esc(e.detail) + '</div>' : '') + '</li>').join('') + '</ul>'
+      + '<div class="doc-tip">仅记录本页真实发生的操作，用于演示“谁在什么时候把通知处理到哪一步”。'
+      + '正式版会把该记录写入班级工作台，本演示不落地存储。</div>'
+    : '<div class="empty-note">暂无操作记录。</div>';
+}
+
+/* ---------- 9. 复制 ---------- */
+function copyText(text, okMsg){
+  const done = () => { toast(okMsg); logEvent(okMsg.replace(/（.*?）/g, ''), '共 ' + text.replace(/\s/g, '').length + ' 字'); };
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+  } else fallbackCopy(text, done);
+}
+function fallbackCopy(text, done){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;left:-9999px;top:0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); done(); }
+  catch (e){ toast('复制失败，请手动选中复制'); }
+  document.body.removeChild(ta);
+}
+
+/* ---------- 10. 抽屉 ---------- */
+let current = null;
+const SUB = {
+  compare: '任务卡每个字段在原文中的出处；点任务卡任一字段可直接定位',
+  msg: '由任务卡直接生成，可原样发到班级群',
+  ask: '原文没写、必须追问的事项，逐条列清',
+  log: '本页真实操作记录'
+};
+function openArt(name){
+  if (name === 'card'){ closeDrawer(); return; }
+  current = name;
+  const activeKey = openArt._key || null;
+  openArt._key = null;
+  $('drTitle').textContent = { compare: '原文对照', msg: '发班文案', ask: '追问清单', log: '留痕记录' }[name];
+  $('drSub').textContent = SUB[name];
+  $('drBody').scrollTop = 0;            // 先复位，再绘制，避免把定位滚动的结果冲掉
+  if (name === 'compare') paintCompare(activeKey);
+  if (name === 'msg') paintMsg();
+  if (name === 'ask') paintAsk();
+  if (name === 'log') paintLog();
+  $('drawer').classList.add('on');
+  $('drawer').setAttribute('aria-hidden', 'false');
+  $('scrim').classList.add('on');
+  document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-current', String(c.dataset.art === name)));
+}
+function closeDrawer(){
+  $('drawer').classList.remove('on');
+  $('drawer').setAttribute('aria-hidden', 'true');
+  $('scrim').classList.remove('on');
+  current = null;
+  document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-current', String(c.dataset.art === 'card')));
+}
+
+/* ---------- 11. 事件绑定（全部为新增监听，不改动原有 onclick 逻辑） ---------- */
+document.querySelectorAll('.chip').forEach((c) => {
+  c.onclick = () => openArt(c.dataset.art);
+});
+$('scrim').onclick = closeDrawer;
+$('drClose').onclick = closeDrawer;
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && current) closeDrawer();
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !gen.disabled){ e.preventDefault(); gen.click(); }
+});
+
+/* 点击任务卡任一行 → 打开原文对照并高亮该字段出处 */
+card.addEventListener('click', (e) => {
+  const row = e.target.closest('.row');
+  if (!row) return;
+  const rows = Array.from(card.children).filter(el => el.classList.contains('row'));
+  const k = ORDER[rows.indexOf(row)];
+  if (!k) return;
+  if (k === '待确认'){
+    openArt('ask');
+    logEvent('打开追问清单', '来自「待确认」字段');
+    return;
+  }
+  openArt._key = k;
+  openArt('compare');
+  logEvent('查看原文出处', '字段：' + k);
+});
+
+/* 生成：进度线 + 留痕（在 run() 之外另挂监听，run 本体不动） */
+gen.addEventListener('click', () => {
+  const p = $('progress');
+  p.classList.remove('on');
+  void p.offsetWidth;
+  p.classList.add('on');
+  setTimeout(() => p.classList.remove('on'), 760);
+  logEvent('生成任务卡', '原文 ' + src.value.replace(/\s/g, '').length + ' 字 → 8 项要素');
+});
+document.getElementById('load').addEventListener('click', () => {
+  logEvent('载入示例通知', '演示用通知：国家助学金补评');
+});
+document.getElementById('clear').addEventListener('click', () => {
+  logEvent('清空任务卡');
+});
+
+/* 生成完成检测：观察 #card，出现 8 行即视为渲染完毕（只读观察，不介入渲染） */
+let filled = false, meterDone = false;
+const mo = new MutationObserver(() => {
+  const rows = Array.from(card.children).filter(el => el.classList.contains('row'));
+  if (!filled && rows.length === ORDER.length){
+    filled = true;
+    rows.forEach(r => { r.tabIndex = 0; r.title = '点击查看该字段的原文出处'; });
+    if (!meterDone){ buildMeter(true); meterDone = true; }
+  }
+  if (filled && rows.length === 0){          // 清空后刻度回到“未生成”
+    filled = false; meterDone = false; buildMeter(false);
+  }
+});
+mo.observe(card, { childList: true });
+/* 键盘可达：回车/空格等同点击 */
+card.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' '){
+    const row = e.target.closest('.row');
+    if (row){ e.preventDefault(); row.click(); }
+  }
+});
+
+/* 字数统计 */
+function updateCounter(){
+  const n = src.value.replace(/\s/g, '').length;
+  $('counter').innerHTML = '原文 <b>' + n + '</b> 字';
+}
+src.addEventListener('input', updateCounter);
+
+/* 初始化：先算字数，再做刻度（刻度依赖状态层，避免任何一处异常连带字数不显示） */
+updateCounter();
+buildMeter(false);
+logEvent('页面载入', '已预载示例通知（演示数据）');
+
+/* =====================================================================
+   v3 新增：追问应答闭环 —— 问 → 答 → 回写 → 下游同步
+   ---------------------------------------------------------------------
+   克制原则同 v2：不改 RESULT 任何一个字，不改 render() 函数体。
+   只加一层可变状态 CONF（老师确认后的值；声明已上移到 ORDER 之后），然后：
+     · pendingItems() 过滤掉已确认项（此处重新声明，覆盖旧实现）
+     · 任务卡「材料」「待确认」两行由 patchCard() 就地改写，不整卡重绘
+     · 发班文案的「暂未明确（共 N 项）」自动减少，因为它调的就是 pendingItems()
+     · 顶部刻度由 buildMeter() 重算，7/8 → 8/8
+     · 每次回写往留痕里记一条
+   演示：打开「追问清单」→ 填「1 份」→ 确认回写 → 任务卡、文案、计数三处同时变。
+   ===================================================================== */
+function pendingItems(){
+  return ALL_PENDING.filter((_, i) => !(i in CONF));
+}
+function countPending(){ return ALL_PENDING.length - CONF_ORDER.length; }
+function confirmedItems(){
+  return CONF_ORDER.map(i => ({ i, q: ALL_PENDING[i], v: CONF[i] }));
+}
+
+/* 材料行：改掉「1 项 + 份数待确认」这种自相矛盾的说法 */
+function materialText(){
+  const base = "《本专科生国家助学金申请表》（见附件）";
+  const got = [], miss = [];
+  if (CONF[0]) got.push("份数：" + CONF[0]); else miss.push("份数");
+  if (CONF[1]) got.push(CONF[1]); else miss.push("是否盖章");
+  if (!got.length) return base + "；份数、是否盖章原文未写 → 待确认";
+  return base + "；" + got.join("；") + (miss.length ? "；" + miss.join("、") + "原文未写 → 待确认" : "；材料要素已齐");
+}
+
+function patchCard(){
+  const rows = [...card.querySelectorAll('.row')];
+  if (!rows.length) return;
+  const byKey = (k) => rows.find(r => {
+    const kk = r.querySelector('.k');
+    return kk && kk.textContent.trim() === k;
+  });
+
+  const matRow = byKey('材料');
+  if (matRow){
+    const v = matRow.querySelector('.v');
+    if (v && v.textContent.trim() !== materialText()) v.textContent = materialText();
+  }
+
+  const waitRow = byKey('待确认');
+  if (waitRow){
+    const v = waitRow.querySelector('.v');
+    if (!v) return;
+    /* 保留原序号：已确认的项跳号，正好看出哪一条被答掉了 */
+    const left = ALL_PENDING.map((t, i) => ({ t, i })).filter(o => !(o.i in CONF));
+    const sig = JSON.stringify(CONF);
+    if (v.dataset.sig === sig) return;
+    v.dataset.sig = sig;
+    if (!left.length){
+      v.innerHTML = '<span class="allclear">5 项全部已确认，任务卡闭合</span>';
+      waitRow.classList.remove('wait');
+      waitRow.classList.add('closed');
+    } else {
+      const lines = [];
+      for (let i = 0; i < left.length; i += 3){
+        lines.push(left.slice(i, i + 3).map(o => CIRC[o.i] + ' ' + o.t).join("　"));
+      }
+      v.innerHTML = lines.map(l => '<div>' + esc(l) + '</div>').join('')
+        + '<div class="who">问谁：“各分院补评名额及等级”问各分院教务办，其余问学生资助管理中心（起草单位）</div>';
+    }
+  }
+
+  /* ③④⑤ 在任务卡上没有独立行，统一追加到「条件」行末尾，避免答完看不到变化 */
+  const condRow = byKey('条件');
+  if (condRow){
+    const cv = condRow.querySelector('.v');
+    const ul = cv && cv.querySelector('ul');
+    if (ul){
+      ul.querySelectorAll('li.conf').forEach(e => e.remove());
+      [2, 3, 4].forEach(i => {
+        if (i in CONF){
+          const li = document.createElement('li');
+          li.className = 'conf';
+          li.textContent = '（已确认）' + CONF[i];
+          ul.appendChild(li);
+        }
+      });
+    }
+  }
+}
+
+function buildMeter(done){
+  const segs = $('segs');
+  segs.innerHTML = '';
+  const allClear = countPending() === 0;
+  ORDER.forEach((k) => {
+    const s = document.createElement('span');
+    if (done) s.className = (k === '待确认' && !allClear) ? 'todo' : 'ok';
+    segs.appendChild(s);
+  });
+  if (!done){ $('meterTxt').textContent = '未生成'; return; }
+  const filledN = ORDER.filter(k => k !== '待确认').length + (allClear ? 1 : 0);
+  $('meterTxt').textContent = filledN + '/' + ORDER.length + ' 行已明确 · ' + countPending() + ' 项待确认';
+}
+
+function paintAsk(){
+  const left = ALL_PENDING.map((t, i) => ({ t, i })).filter(o => !(o.i in CONF));
+  const done = confirmedItems();
+
+  let html = '';
+  if (left.length){
+    html += '<div class="msg-meta" style="margin-bottom:6px"><span>还有 ' + left.length + ' 项原文没写</span>'
+          + '<span>填进去点「确认回写」，任务卡与文案同步改</span></div>';
+    html += '<ul class="ask-list">' + left.map(o => {
+      const m = ASK_META[o.i] || {};
+      return '<li data-n="' + CIRC[o.i] + '">'
+        + '<div class="q">' + esc(o.t) + '</div>'
+        + '<div class="ask-from">原文未写明 · 建议问：' + esc(m.who || '起草单位') + '</div>'
+        + '<div class="ans-row">'
+          + '<input type="text" data-idx="' + o.i + '" aria-label="确认「' + esc(o.t) + '」" placeholder="' + esc(m.hint || '输入确认结果') + '">'
+          + '<button class="ans-go" data-idx="' + o.i + '">确认回写</button>'
+        + '</div></li>';
+    }).join('') + '</ul>';
+  } else {
+    html += '<div class="ask-clear">5 项已全部确认。这条通知里没有需要猜的地方——'
+          + '任务卡、发班文案、计数三处都已按你的确认更新。</div>';
+  }
+
+  if (done.length){
+    html += '<div class="sec-t">已回写 · 下游已同步</div>'
+          + '<ul class="done-list">' + done.map(d =>
+              '<li><span class="dk">' + CIRC[d.i] + ' ' + esc(d.q) + '</span>'
+              + '<span class="dv">' + esc(d.v) + '</span>'
+              + '<button class="undo" data-idx="' + d.i + '">撤销</button></li>').join('') + '</ul>';
+  }
+
+  html += '<div class="btn-row"><button class="btn-sm" id="copyAsk">'
+        + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>'
+        + '复制待确认清单</button></div>';
+
+  $('drBody').innerHTML = html;
+
+  $('drBody').querySelectorAll('.ans-go').forEach((b) => {
+    b.onclick = () => {
+      const i = Number(b.dataset.idx);
+      const inp = $('drBody').querySelector('.ans-row input[data-idx="' + i + '"]');
+      confirmItem(i, inp ? inp.value : '');
+    };
+  });
+  $('drBody').querySelectorAll('.ans-row input').forEach((inp) => {
+    inp.onkeydown = (e) => { if (e.key === 'Enter'){ e.preventDefault(); confirmItem(Number(inp.dataset.idx), inp.value); } };
+  });
+  $('drBody').querySelectorAll('.undo').forEach((b) => {
+    b.onclick = () => undoItem(Number(b.dataset.idx));
+  });
+  $('copyAsk').onclick = () => {
+    if (!left.length){ toast('已经没有待确认项了'); return; }
+    const text = '您好，关于「' + RESULT["事项"] + '」，以下 ' + left.length + ' 项原文未写明，麻烦确认：\n'
+      + left.map((o, n) => (n + 1) + '. ' + o.t).join('\n');
+    copyText(text, '待确认清单已复制（' + left.length + ' 项）');
+  };
+}
+
+function confirmItem(i, raw){
+  const val = String(raw || '').trim();
+  if (!val){ toast('先在输入框里填确认结果'); return; }
+  CONF[i] = val;
+  if (CONF_ORDER.indexOf(i) === -1) CONF_ORDER.push(i);
+  logEvent('追问已回写', '第 ' + (i + 1) + ' 项「' + ALL_PENDING[i] + '」→ ' + val + '，任务卡/文案/计数同步');
+  patchCard();
+  buildMeter(true);
+  statusEl.textContent = '已回写 · 待确认剩 ' + countPending() + ' 项';
+  paintAsk();
+  toast('已回写：' + val);
+}
+
+function undoItem(i){
+  delete CONF[i];
+  const k = CONF_ORDER.indexOf(i);
+  if (k > -1) CONF_ORDER.splice(k, 1);
+  logEvent('撤销确认', '第 ' + (i + 1) + ' 项「' + ALL_PENDING[i] + '」退回待确认');
+  patchCard();
+  buildMeter(true);
+  statusEl.textContent = '已撤销 · 待确认剩 ' + countPending() + ' 项';
+  paintAsk();
+}
+
+/* 生成完成后（700ms 动画之后）再改一次卡片，不改 run() 本体 */
+gen.addEventListener('click', () => setTimeout(() => { patchCard(); buildMeter(true); }, 780));
+document.getElementById('load').addEventListener('click', () => setTimeout(() => { patchCard(); buildMeter(true); }, 780));</script>
+</body>
+</html>

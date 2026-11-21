@@ -1,0 +1,110 @@
+[
+  {
+    "case": 1,
+    "input_excerpt": "工作底稿原文·国家励志奖学金评审（2025—2026学年）",
+    "passed": true,
+    "hard_error": 0
+  },
+  {
+    "case": 3,
+    "input_excerpt": "工作底稿原文（“下周三”相对时间）+ 校历周次换算表（第1周周一2026-08-31，基准日2026-11-13）",
+    "passed": true,
+    "hard_error": 0
+  },
+  {
+    "case": 4,
+    "input_excerpt": "工作底稿原文·体质健康测试（2024/2025/2026级）",
+    "passed": true,
+    "hard_error": 0
+  },
+  {
+    "case": 5,
+    "input_excerpt": "工作底稿原文·复合条件（困难+绩点3.0+无违纪）",
+    "passed": true,
+    "hard_error": 0
+  },
+  {
+    "case": 6,
+    "input_excerpt": "工作底稿原文（同用例1）·材料清单化",
+    "passed": true,
+    "hard_error": 0
+  },
+  {
+    "case": 7,
+    "input_excerpt": "工作底稿原文·带附件（附件1《XX申请表》、附件2《汇总表》）",
+    "passed": false,
+    "hard_error": 0
+  },
+  {
+    "case": 8,
+    "input_excerpt": "工作底稿原文·待定项（答辩时间地点另行通知）",
+    "passed": true,
+    "hard_error": 0
+  },
+  {
+    "case": 9,
+    "input_excerpt": "工作底稿原文·A/B 两版（11-18 vs 修订 11-25）",
+    "passed": true,
+    "hard_error": 0
+  },
+  {
+    "case": 10,
+    "input_excerpt": "工作底稿原文·培训机构招生广告",
+    "passed": true,
+    "hard_error": 0
+  },
+  {
+    "case": 11,
+    "input_excerpt": "工作底稿原文·信息不足（“看群文件。”）",
+    "passed": true,
+    "hard_error": 0
+  },
+  {
+    "case": 13,
+    "input_excerpt": "工作底稿原文·机械工程学院暑期实习通知",
+    "passed": true,
+    "hard_error": 0
+  },
+  {
+    "case": 14,
+    "input_excerpt": "工作底稿原文·二维码报名（截止11月10日17:00）",
+    "passed": true,
+    "hard_error": 0
+  },
+  {
+    "case": 15,
+    "input_excerpt": "工作底稿原文·盖章材料（成绩单）",
+    "passed": true,
+    "hard_error": 0
+  },
+  {
+    "case": 16,
+    "input_excerpt": "工作底稿原文·对象为教师（教学资料提交）",
+    "passed": true,
+    "hard_error": 0
+  },
+  {
+    "case": 17,
+    "input_excerpt": "工作底稿原文·中英混排（Nov 20 / Room 305）",
+    "passed": true,
+    "hard_error": 0
+  },
+  {
+    "case": 18,
+    "input_excerpt": "XY-2026-003-毕业实习方案（5,928字符，8个附件）",
+    "passed": true,
+    "hard_error": 0
+  },
+  {
+    "case": 19,
+    "input_excerpt": "工作底稿原文·修订版（11-20→11-26，本件为准）",
+    "passed": true,
+    "hard_error": 0
+  },
+  {
+    "case": 20,
+    "input_excerpt": "工作底稿原文（同用例1）+ 要求：生成班级群发文案，≤200字",
+    "passed": true,
+    "hard_error": 0
+  }
+]
